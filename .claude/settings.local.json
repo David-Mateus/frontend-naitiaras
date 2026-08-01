@@ -1,0 +1,33 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm install *)",
+      "Bash(npm run *)",
+      "Bash(powershell -NoProfile -Command \"Stop-Process -Id 18668 -Force\")",
+      "Bash(find \"C:/Users/DavidMateus/AppData/Local/Temp\" -maxdepth 4 -iname \"*.png\" -newermt \"-15 minutes\" 2>/dev/null | head -20)",
+      "Read(//c/Users/DavidMateus/AppData/Local/Temp/**)",
+      "Bash(find \"C:/Users/DavidMateus/AppData/Roaming/Code\" -maxdepth 6 -iname \"*.png\" -newermt \"-20 minutes\" 2>/dev/null | head -20 *)",
+      "Read(//c/Users/DavidMateus/AppData/Roaming/Code/**)",
+      "Bash(powershell -c \"Get-Content 'c:\\\\Users\\\\DavidMateus\\\\Desktop\\\\NaiTiras\\\\package.json'\")",
+      "Bash(command -v chromium-cli)",
+      "Bash(chromium-cli --help)",
+      "Bash(curl -sf http://localhost:5173)",
+      "Bash(node -e \"require.resolve\\('playwright'\\)\")",
+      "Bash(npx --no-install playwright --version)",
+      "Bash(npm ls *)",
+      "Read(//c//**)",
+      "Bash(timeout 100 npx playwright install chromium)",
+      "Bash(node \"/c/Users/DAVIDM~1/AppData/Local/Temp/claude/c--Users-DavidMateus-Desktop-NaiTiras/4703affe-05c4-46af-a8f9-60bea155f690/scratchpad/verify-carousel.mjs\")",
+      "Bash(cp \"/c/Users/DAVIDM~1/AppData/Local/Temp/claude/c--Users-DavidMateus-Desktop-NaiTiras/4703affe-05c4-46af-a8f9-60bea155f690/scratchpad/verify-carousel.mjs\" \"/c/Users/DavidMateus/Desktop/NaiTiras/verify-carousel.mjs\")",
+      "Bash(node verify-carousel.mjs)",
+      "Bash(netstat -ano)",
+      "Bash(sed -i \"s/height: 900/height: 1600/\" check-hover.mjs)",
+      "Bash(timeout 25 node check-hover.mjs)",
+      "Bash(node check-gradient.mjs)",
+      "Bash(cd \"/c/Users/DavidMateus/Desktop/NaiTiras\" && grep -i playwright package-lock.json | head -5; echo \"---\"; rm -rf node_modules/playwright node_modules/playwright-core node_modules/.bin/playwright* 2>/dev/null; ls node_modules | grep -i playwright || echo \"cleaned\")"
+    ],
+    "additionalDirectories": [
+      "C:\\Users\\DavidMateus\\Desktop\\NaiTiras\\node_modules\\.bin"
+    ]
+  }
+}
