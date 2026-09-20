@@ -18,9 +18,9 @@ Cada produto é montado à mão, com atenção ao acabamento e ao conforto. Mais
 }
 
 export const WHATSAPP = {
-  displayNumber: '+55 81 8586-4521',
+  displayNumber: '+55 81 98586-4521',
   // Apenas dígitos, com código do país — usado no link wa.me
-  digits: '558185864521',
+  digits: '5581985864521',
   defaultMessage:
     'Olá! Vim pelo site da Nai Tiaras e gostaria de saber mais sobre os produtos.',
 }
