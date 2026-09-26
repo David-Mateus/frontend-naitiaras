@@ -1,5 +1,13 @@
 # Publicação híbrida: Vercel + backend próprio
 
+O projeto está organizado em duas pastas independentes:
+
+```text
+naitiaras/
+├── frontend/  # este repositório React/Vite, publicado na Vercel
+└── backend/   # API Python e SQLite, executados separadamente
+```
+
 O frontend pode continuar na Vercel e a API pode rodar em um computador ou servidor controlado pela loja. O navegador acessa a API pela variável `VITE_API_URL`.
 
 ## Frontend na Vercel
@@ -13,9 +21,10 @@ Para desenvolvimento local, não defina `VITE_API_URL`: o Vite usa o proxy `/api
 
 ## Backend
 
-O backend não depende de pacotes externos:
+O backend, localizado na pasta irmã `../backend`, não depende de pacotes externos:
 
 ```bash
+cd ..
 cp backend/.env.example backend/.env
 # edite as credenciais, origens e a chave Groq
 set -a; . backend/.env; set +a

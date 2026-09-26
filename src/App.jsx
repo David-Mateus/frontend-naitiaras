@@ -3,6 +3,8 @@ import { ArrowRight, Check, Heart, Instagram, LockKeyhole, LogOut, MapPin, Menu,
 import { PRODUCTS as FALLBACK_PRODUCTS, WHATSAPP, buildWhatsAppLink, COMPANY } from './data/content'
 
 const CATEGORY_OPTIONS = ['Todos', 'Laços', 'Tiaras', 'Tiras de recém-nascido']
+const HOME_PRODUCT_LIMIT = 6
+const CATALOG_PAGE_SIZE = 10
 const API = import.meta.env.VITE_API_URL || '/api'
 const money = (value) => Number(value || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
 const unitLabel = (value) => ({ unidade: 'unidade', par: 'par', kit: 'kit' }[value] || value)
@@ -20,12 +22,18 @@ function initialProducts() {
 }
 
 function readCart() { try { return JSON.parse(localStorage.getItem('nai-cart') || '[]') } catch { return [] } }
+function screenFromHash() {
+  if (window.location.hash === '#admin') return 'admin'
+  if (window.location.hash === '#produtos') return 'products'
+  return 'home'
+}
 
 export default function App() {
   const [products, setProducts] = useState(initialProducts)
-  const [screen, setScreen] = useState(window.location.hash === '#admin' ? 'admin' : 'home')
+  const [screen, setScreen] = useState(screenFromHash)
   const [category, setCategory] = useState('Todos')
   const [search, setSearch] = useState('')
+  const [productPage, setProductPage] = useState(1)
   const [cart, setCart] = useState(readCart)
   const [cartOpen, setCartOpen] = useState(false)
   const [selected, setSelected] = useState(null)
@@ -37,13 +45,20 @@ export default function App() {
     fetch(`${API}/products`).then((r) => r.ok ? r.json() : Promise.reject()).then((data) => data.products?.length && setProducts(data.products)).catch(() => {})
   }, [])
   useEffect(() => { localStorage.setItem('nai-cart', JSON.stringify(cart)) }, [cart])
-  useEffect(() => { const handler = () => setScreen(window.location.hash === '#admin' ? 'admin' : 'home'); window.addEventListener('hashchange', handler); return () => window.removeEventListener('hashchange', handler) }, [])
+  useEffect(() => { const handler = () => setScreen(screenFromHash()); window.addEventListener('hashchange', handler); return () => window.removeEventListener('hashchange', handler) }, [])
 
   const filtered = useMemo(() => products.filter((item) => (category === 'Todos' || item.category === category) && String(item.name || item.title || '').toLowerCase().includes(search.toLowerCase())), [products, category, search])
+  const homeProducts = useMemo(() => products.filter((item) => item.status !== 'inactive').slice(0, HOME_PRODUCT_LIMIT), [products])
+  const totalPages = Math.max(1, Math.ceil(filtered.length / CATALOG_PAGE_SIZE))
+  const pagedProducts = useMemo(() => filtered.slice((productPage - 1) * CATALOG_PAGE_SIZE, productPage * CATALOG_PAGE_SIZE), [filtered, productPage])
   const cartCount = cart.reduce((sum, item) => sum + item.quantity, 0)
   const subtotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0)
   const notify = (message) => { setToast(message); window.setTimeout(() => setToast(''), 2600) }
-  const goToShop = (next = 'Todos') => { setCategory(next); document.getElementById('produtos')?.scrollIntoView({ behavior: 'smooth' }) }
+  const goToSection = (id) => { setMobileMenu(false); window.location.hash = id; window.setTimeout(() => document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' }), 40) }
+  const goToShop = (next = 'Todos') => { setCategory(next); setSearch(''); setProductPage(1); setMobileMenu(false); window.location.hash = 'produtos' }
+
+  useEffect(() => { setProductPage((current) => Math.min(current, totalPages)) }, [totalPages])
+  useEffect(() => { setProductPage(1) }, [category, search])
 
   function addToCart(item, quantity = 1) {
     if (!item.available || item.status !== 'active' || item.stock < 1) return notify('Este produto está indisponível no momento.')
@@ -56,17 +71,39 @@ export default function App() {
   if (screen === 'admin') return <AdminWorkspace products={products} setProducts={setProducts} onBack={() => { window.location.hash = ''; setScreen('home') }} />
 
   return <div className="min-h-screen bg-[#fffafc] text-[#4a1226]">
-    <header className="site-header"><div className="shell header-inner"><a className="brand" href="#inicio" onClick={() => setMobileMenu(false)}><img src="/assets/logo.png" alt="Nai Tiaras" /><span><strong>Nai</strong> Tiaras</span></a><nav className={`main-nav ${mobileMenu ? 'is-open' : ''}`}><a href="#inicio" onClick={() => setMobileMenu(false)}>Início</a><a href="#produtos" onClick={() => setMobileMenu(false)}>Produtos</a><a href="#sobre" onClick={() => setMobileMenu(false)}>Nossa história</a><a href="#contato" onClick={() => setMobileMenu(false)}>Contato</a></nav><div className="header-actions"><button className="icon-button cart-trigger" onClick={() => setCartOpen(true)} aria-label="Abrir carrinho"><ShoppingBag size={21} />{cartCount > 0 && <span>{cartCount}</span>}</button><a className="header-whatsapp" href={buildWhatsAppLink()} target="_blank" rel="noreferrer">Fale conosco</a><button className="menu-trigger" onClick={() => setMobileMenu((value) => !value)} aria-label="Abrir menu"><Menu size={22} /></button></div></div></header>
+    <header className="site-header"><div className="shell header-inner"><a className="brand" href="#inicio" onClick={(event) => { event.preventDefault(); goToSection('inicio') }}><img src="/assets/logo.png" alt="Nai Tiaras" /><span><strong>Nai</strong> Tiaras</span></a><nav className={`main-nav ${mobileMenu ? 'is-open' : ''}`}><a href="#inicio" onClick={(event) => { event.preventDefault(); goToSection('inicio') }}>Início</a><a href="#produtos" onClick={(event) => { event.preventDefault(); goToShop() }}>Produtos</a><a href="#sobre" onClick={(event) => { event.preventDefault(); goToSection('sobre') }}>Nossa história</a><a href="#contato" onClick={(event) => { event.preventDefault(); goToSection('contato') }}>Contato</a></nav><div className="header-actions"><button className="icon-button cart-trigger" onClick={() => setCartOpen(true)} aria-label="Abrir carrinho"><ShoppingBag size={21} />{cartCount > 0 && <span>{cartCount}</span>}</button><a className="header-whatsapp" href={buildWhatsAppLink()} target="_blank" rel="noreferrer">Fale conosco</a><button className="menu-trigger" onClick={() => setMobileMenu((value) => !value)} aria-label="Abrir menu"><Menu size={22} /></button></div></div></header>
     <main>
+      {screen === 'products' ? <ProductsPage filtered={filtered} pagedProducts={pagedProducts} category={category} onCategoryChange={(next) => { setCategory(next); setProductPage(1) }} search={search} onSearchChange={(next) => { setSearch(next); setProductPage(1) }} page={productPage} totalPages={totalPages} onPageChange={setProductPage} onBack={() => goToSection('inicio')} onOpen={setSelected} onAdd={addToCart} /> : <>
       <section id="inicio" className="hero-section"><div className="shell hero-grid"><div className="hero-copy"><div className="eyebrow"><span>✦</span> Acessórios artesanais desde 2015</div><h1>Pequenos detalhes.<br /><em>Grandes encantos.</em></h1><p>Laços, tiaras e faixas feitos à mão para acompanhar os momentos mais especiais da sua princesa.</p><div className="hero-actions"><button className="primary-button" onClick={() => goToShop()}>Ver coleção <ArrowRight size={17} /></button><a className="text-link" href={buildWhatsAppLink()} target="_blank" rel="noreferrer">Falar no WhatsApp <ArrowRight size={15} /></a></div><div className="hero-note"><span>♡</span> Feito com carinho em Recife</div></div><div className="hero-art"><div className="hero-card hero-card-back"><img src="/assets/produto-2.jpeg" alt="Laços artesanais" /></div><div className="hero-card hero-card-front"><img src="/assets/produto-4.jpeg" alt="Faixa infantil delicada" /></div><div className="hero-sticker"><Heart size={16} fill="currentColor" /> feito à mão</div></div></div></section>
       <section className="category-strip"><div className="shell category-row"><div><span className="section-kicker">Escolha por categoria</span><h2>Um toque especial para cada momento.</h2></div><div className="category-pills">{CATEGORY_OPTIONS.slice(1).map((item) => <button key={item} onClick={() => goToShop(item)}>{item}<ArrowRight size={15} /></button>)}</div></div></section>
-      <section id="produtos" className="products-section shell"><div className="section-heading"><div><span className="section-kicker">Nossa vitrine</span><h2>Feitos para encantar</h2></div><p>Escolha seus favoritos, monte seu carrinho e finalize o pedido direto pelo WhatsApp.</p></div><div className="catalog-toolbar"><div className="category-tabs">{CATEGORY_OPTIONS.map((item) => <button className={category === item ? 'active' : ''} key={item} onClick={() => setCategory(item)}>{item}</button>)}</div><label className="search-box"><Search size={17} /><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Buscar produto" /></label></div><div className="products-grid">{filtered.map((item) => <ProductCard key={item.id} product={item} onOpen={() => setSelected(item)} onAdd={() => addToCart(item)} />)}</div>{filtered.length === 0 && <div className="empty-state"><Package size={30} /><h3>Nenhum produto encontrado</h3><p>Tente buscar por outro nome ou categoria.</p></div>}</section>
+      <section id="produtos" className="products-section shell"><div className="section-heading"><div><span className="section-kicker">Nossa vitrine</span><h2>Feitos para encantar</h2></div><p>Escolha seus favoritos, monte seu carrinho e finalize o pedido direto pelo WhatsApp.</p></div><div className="products-grid">{homeProducts.map((item) => <ProductCard key={item.id} product={item} onOpen={() => setSelected(item)} onAdd={() => addToCart(item)} />)}</div><div className="catalog-cta"><span>Mostrando {HOME_PRODUCT_LIMIT} produtos em destaque</span><button className="primary-button" onClick={() => goToShop()}>Ver todos os produtos <ArrowRight size={17} /></button></div></section>
       <section id="sobre" className="about-section"><div className="shell about-grid"><div className="about-image"><img src="/assets/produto-6.jpeg" alt="Tiara artesanal Nai Tiaras" /><div className="about-badge"><Heart size={18} fill="currentColor" /> carinho em cada detalhe</div></div><div className="about-copy"><span className="section-kicker">Nossa história</span><h2>Um laço de cada vez, desde 2015.</h2><p>A Nai Tiaras nasceu de um sonho simples: transformar fitas, rendas e muito amor em acessórios que fazem meninas e bebês se sentirem especiais.</p><p>Cada peça é montada à mão, com atenção ao acabamento e ao conforto. O mesmo cuidado do primeiro laço continua presente em cada pedido.</p><div className="stats"><div><strong>2015</strong><span>Fundação</span></div><div><strong>100%</strong><span>Artesanal</span></div><div><strong>+10</strong><span>Anos de carinho</span></div></div></div></div></section>
       <section className="service-section"><div className="shell service-grid"><div><span className="section-kicker">Para você comprar com tranquilidade</span><h2>Do nosso ateliê para a sua princesa.</h2></div><div className="service-list"><div><Package size={21} /><span><strong>Produtos artesanais</strong><small>Peças feitas com cuidado e acabamento delicado.</small></span></div><div><Truck size={21} /><span><strong>Retire ou receba em casa</strong><small>Entrega própria a partir de R$ 7,00 em Recife.</small></span></div><div><LockKeyhole size={21} /><span><strong>Pedido pelo WhatsApp</strong><small>Converse com a gente antes de confirmar.</small></span></div></div></div></section>
+      </>}
     </main>
     <footer id="contato" className="site-footer"><div className="shell footer-grid"><div><div className="footer-brand"><img src="/assets/logo.png" alt="Nai Tiaras" /><span>Nai Tiaras</span></div><p>{COMPANY.slogan}. Acessórios feitos com carinho para encantar.</p></div><div><h3>Visite a gente</h3><p className="footer-contact"><MapPin size={16} /> R. Adolfo Caminha, 244<br />Córrego do Jenipapo, Recife - PE</p></div><div><h3>Fale conosco</h3><a className="footer-contact" href={buildWhatsAppLink()} target="_blank" rel="noreferrer"><UserRound size={16} /> {WHATSAPP.displayNumber}</a><a className="footer-contact" href="#"><Instagram size={16} /> @naitiaras</a></div></div><div className="shell footer-bottom"><span>© {new Date().getFullYear()} Nai Tiaras</span><a href="#admin" className="admin-link">Acesso da gestão</a></div></footer>
     {cartOpen && <CartDrawer cart={cart} subtotal={subtotal} onClose={() => setCartOpen(false)} onChange={changeQuantity} onRemove={removeFromCart} onCheckout={() => { setCartOpen(false); setCheckoutOpen(true) }} />}{selected && <ProductModal product={selected} onClose={() => setSelected(null)} onAdd={addToCart} />}{checkoutOpen && <CheckoutModalFixed cart={cart} subtotal={subtotal} onClose={() => setCheckoutOpen(false)} onSuccess={() => { setCart([]); setCheckoutOpen(false); notify('Pedido criado. O WhatsApp será aberto agora.') }} />}{toast && <div className="toast"><Check size={17} /> {toast}</div>}<ChatWidget />
   </div>
+}
+
+function ProductsPage({ filtered, pagedProducts, category, onCategoryChange, search, onSearchChange, page, totalPages, onPageChange, onBack, onOpen, onAdd }) {
+  return <section className="products-page">
+    <div className="shell products-page-head">
+      <button className="back-link" onClick={onBack}><ArrowRight size={16} className="back-arrow" /> Voltar para início</button>
+      <span className="section-kicker">Catálogo completo</span>
+      <h1>Encontre o acessório perfeito.</h1>
+      <p>{filtered.length} {filtered.length === 1 ? 'produto disponível' : 'produtos disponíveis'} para você escolher com calma.</p>
+    </div>
+    <div className="products-section shell products-page-content">
+      <div className="catalog-toolbar">
+        <div className="category-tabs">{CATEGORY_OPTIONS.map((item) => <button className={category === item ? 'active' : ''} key={item} onClick={() => onCategoryChange(item)}>{item}</button>)}</div>
+        <label className="search-box"><Search size={17} /><input value={search} onChange={(event) => onSearchChange(event.target.value)} placeholder="Buscar produto" /></label>
+      </div>
+      <div className="products-grid">{pagedProducts.map((item) => <ProductCard key={item.id} product={item} onOpen={() => onOpen(item)} onAdd={() => onAdd(item)} />)}</div>
+      {filtered.length === 0 && <div className="empty-state"><Package size={30} /><h3>Nenhum produto encontrado</h3><p>Tente buscar por outro nome ou categoria.</p></div>}
+      {filtered.length > 0 && <div className="pagination" aria-label="Paginação de produtos"><button onClick={() => onPageChange(page - 1)} disabled={page === 1}>Anterior</button><div className="pagination-pages">{Array.from({ length: totalPages }, (_, index) => index + 1).map((number) => <button key={number} className={page === number ? 'active' : ''} onClick={() => onPageChange(number)} aria-label={`Ir para página ${number}`}>{number}</button>)}</div><button onClick={() => onPageChange(page + 1)} disabled={page === totalPages}>Próxima</button></div>}
+    </div>
+  </section>
 }
 
 function ChatWidget() {
