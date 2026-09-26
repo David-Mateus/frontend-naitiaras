@@ -2,12 +2,11 @@ services:
   - type: web
     name: nai-tiaras
     runtime: docker
-    plan: 0.5c-512mb
-    disk:
-      name: nai-tiaras-data
-      mountPath: /var/data
-      sizeGB: 1
+    plan: free
     envVars:
+      # Banco temporário para testes; a Render apaga os dados ao reiniciar.
+      - key: NAI_DB_PATH
+        value: /tmp/naitiaras.db
       - key: NAI_ADMIN_EMAIL
         sync: false
       - key: NAI_ADMIN_PASSWORD
