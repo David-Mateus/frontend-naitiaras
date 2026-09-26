@@ -24,11 +24,11 @@ from urllib.parse import urlparse
 
 
 ROOT = Path(__file__).resolve().parents[1]
-DB_PATH = Path(__file__).resolve().parent / "naitiaras.db"
-FRONTEND_ROOT = ROOT / "frontend-naitiaras" if (ROOT / "frontend-naitiaras").exists() else ROOT
+DB_PATH = Path(os.environ.get("NAI_DB_PATH", Path(__file__).resolve().parent / "naitiaras.db"))
+FRONTEND_ROOT = ROOT / "frontend" if (ROOT / "frontend").exists() else ROOT
 FRONTEND_DIST = FRONTEND_ROOT / "dist"
 HOST = os.environ.get("NAI_HOST", "127.0.0.1")
-PORT = int(os.environ.get("NAI_PORT", "8000"))
+PORT = int(os.environ.get("NAI_PORT", os.environ.get("PORT", "8000")))
 ADMIN_EMAIL = os.environ.get("NAI_ADMIN_EMAIL", "admin@naitiaras.com")
 ADMIN_PASSWORD = os.environ.get("NAI_ADMIN_PASSWORD", "troque-esta-senha")
 GROQ_API_KEY = os.environ.get("GROQ_API_KEY", "")
@@ -453,5 +453,4 @@ def fallback_chat(question, products):
 if __name__ == "__main__":
     init_db()
     print(f"Nai Tiaras API em http://{HOST}:{PORT}")
-    print(f"Login de desenvolvimento: {ADMIN_EMAIL} / {ADMIN_PASSWORD}")
     ThreadingHTTPServer((HOST, PORT), Handler).serve_forever()
